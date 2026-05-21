@@ -1,9 +1,32 @@
 """千牛话术助手 - 美化无边框悬浮窗，点击话术自动填充到千牛输入框"""
 import os
+import ctypes
 import tkinter as tk
 
 import win32con
 import win32gui
+
+DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = ctypes.c_void_p(-4)
+
+
+def enable_high_dpi():
+    """开启高 DPI 感知，避免 Windows 位图缩放导致 Tk 字体发虚。"""
+    try:
+        ctypes.windll.user32.SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+        return
+    except Exception:
+        pass
+
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        return
+    except Exception:
+        pass
+
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
 
 from core.defaults import get_app_root, ensure_phrases_file
 from core.window_tracker import WindowTracker
@@ -31,6 +54,7 @@ class FloatingWindow:
     COLOR_WARN = "#f59e0b"
 
     def __init__(self):
+        enable_high_dpi()
         self.app_root = get_app_root()
         self.phrases_path = ensure_phrases_file(self.app_root)
         self.tracker = WindowTracker()
@@ -50,6 +74,10 @@ class FloatingWindow:
         self.icon_canvas = None
 
         self.root = tk.Tk()
+        try:
+            self.root.tk.call("tk", "scaling", 1.0)
+        except Exception:
+            pass
         self.root.title("千牛话术助手")
         self.root.overrideredirect(True)
         self.root.attributes("-topmost", True)
