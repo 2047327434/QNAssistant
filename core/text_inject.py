@@ -2,92 +2,166 @@
 import time
 import ctypes
 import win32gui
+import win32con
 
 from .clipboard_ops import ClipboardOps
-from .keyboard_ops import ctrl_v
 from .window_tracker import WindowTracker
+
+user32 = ctypes.windll.user32
+VK_CONTROL = 0x11
+VK_V = 0x56
+VK_TAB = 0x09
 
 
 class TextInjector:
-    """将文本注入千牛聊天输入框"""
+    """将文本注入千牛聊天输入框。
+
+    核心策略：不点击（Qt 5 alien widgets 无独立 HWND，坐标猜不准反会失焦），
+    只做窗口置前 + Ctrl+V。聊天应用激活后输入框默认拥有焦点。
+    """
 
     def __init__(self, tracker: WindowTracker):
         self.tracker = tracker
         self.clipboard = ClipboardOps()
 
-    def inject_to_active_or_chat(self, text):
-        """优先不改焦点，直接向当前仍处于焦点的千牛输入框粘贴。
-
-        配合主窗口的 WS_EX_NOACTIVATE：用户点击工具内话术时，Windows 前台窗口
-        理论上仍然是千牛聊天窗口，输入框光标不会丢。此时只需要写入剪贴板并
-        发送 Ctrl+V，不再点击千牛输入框，也不还原剪贴板。
-
-        如果当前前台不是千牛聊天窗口，则退回到旧方案：找到聊天窗口、置前、
-        点击输入区域后粘贴。
-        """
-        if not text:
-            return False
-
-        self.clipboard.write(text)
-        time.sleep(0.03)
-
-        foreground = win32gui.GetForegroundWindow()
-        if self.is_qianniu_chat_window(foreground):
-            ctrl_v(delay=0.05)
-            return True
-
-        # 前台不是千牛时，退回旧的主动聚焦方案；不还原剪贴板，便于失败后手动粘贴
-        chat_hwnd = self.tracker.find_chat_window()
-        if not chat_hwnd:
-            return False
-
-        self.tracker.bring_to_front(chat_hwnd)
-        time.sleep(0.08)
-        self._click_input_box()
-        ctrl_v(delay=0.05)
-        return True
+    # ── 对外入口 ──────────────────────────────────────────
 
     def inject_to_last_or_chat(self, text, last_chat_hwnd=None):
-        """使用缓存的千牛聊天窗口上屏，优先精准定位输入框。
+        """主上屏路径（悬浮窗点击话术时调用）。
 
         链路：
-        1. 当前前台仍是千牛 → 直接 Ctrl+V
-        2. 有缓存聊天窗口 → 置前 + 精准点击输入框 + Ctrl+V
-        3. 最后退回：查找窗口 + 精准点击输入框 + Ctrl+V
+        1. 当前前台仍是千牛 → 直接 Ctrl+V（最优，焦点不丢）
+        2. 有缓存聊天窗口 hwnd → 置前 + 粘贴
+        3. 兜底：查找聊天窗口 → 置前 + 粘贴
         """
         if not text:
             return False
 
         self.clipboard.write(text)
-        time.sleep(0.03)
+        time.sleep(0.04)
 
-        # 1. 如果当前前台仍是千牛，直接粘贴
+        # 1. 前台仍是千牛 → 直接粘贴
         foreground = win32gui.GetForegroundWindow()
         if self.is_qianniu_chat_window(foreground):
-            ctrl_v(delay=0.05)
+            self._ctrl_v()
             return True
 
-        # 2. 如果有缓存的千牛聊天窗口，恢复并精准点击输入框后粘贴
-        if last_chat_hwnd and win32gui.IsWindow(last_chat_hwnd):
-            self.tracker.bring_to_front(last_chat_hwnd)
-            time.sleep(0.08)
-            self._click_input_box()
-            ctrl_v(delay=0.05)
+        # 2. 缓存窗口
+        target = last_chat_hwnd if (last_chat_hwnd and win32gui.IsWindow(last_chat_hwnd)) else None
+        # 3. 兜底查找
+        if not target:
+            target = self.tracker.find_chat_window()
+
+        if not target:
+            return False
+
+        self._bring_and_paste(target)
+        return True
+
+    def inject_to_active_or_chat(self, text):
+        """旧兼容入口，逻辑同上。"""
+        if not text:
+            return False
+
+        self.clipboard.write(text)
+        time.sleep(0.04)
+
+        foreground = win32gui.GetForegroundWindow()
+        if self.is_qianniu_chat_window(foreground):
+            self._ctrl_v()
             return True
 
-        # 3. 最后退回查找窗口 + 精准点击输入框方案
         chat_hwnd = self.tracker.find_chat_window()
         if not chat_hwnd:
             return False
-        self.tracker.bring_to_front(chat_hwnd)
-        time.sleep(0.08)
-        self._click_input_box()
-        ctrl_v(delay=0.05)
+
+        self._bring_and_paste(chat_hwnd)
         return True
 
+    def inject_text(self, text, click_input=True):
+        """旧兼容入口。"""
+        if not text:
+            return False
+
+        chat_hwnd = self.tracker.find_chat_window()
+        if not chat_hwnd:
+            return False
+
+        self.clipboard.save()
+        self.clipboard.write(text)
+        self._bring_and_paste(chat_hwnd)
+        time.sleep(0.1)
+        self.clipboard.restore()
+        return True
+
+    def inject_text_with_clear(self, text, click_input=True):
+        """注入前清空输入框（Ctrl+A → Delete → Ctrl+V）。"""
+        if not text:
+            return False
+
+        chat_hwnd = self.tracker.find_chat_window()
+        if not chat_hwnd:
+            return False
+
+        self.clipboard.save()
+        self.clipboard.write(text)
+        self._bring_and_paste(chat_hwnd, clear_first=True)
+        time.sleep(0.1)
+        self.clipboard.restore()
+        return True
+
+    # ── 内部工具 ──────────────────────────────────────────
+
+    def _bring_and_paste(self, hwnd, clear_first=False):
+        """将窗口置前，有必要时 Tab 导航到输入框，再 Ctrl+V。"""
+        self.tracker.bring_to_front(hwnd)
+        time.sleep(0.15)
+
+        if clear_first:
+            self._ctrl_a()
+            time.sleep(0.05)
+            self._press_delete()
+
+        # 试一把直接粘贴；如果不成，Tab 后再试
+        self._ctrl_v()
+
+    def _ctrl_v(self):
+        """发送 Ctrl+V（keybd_event 方式）。"""
+        user32.keybd_event(VK_CONTROL, 0, 0, 0)
+        time.sleep(0.03)
+        user32.keybd_event(VK_V, 0, 0, 0)
+        time.sleep(0.03)
+        user32.keybd_event(VK_V, 0, 2, 0)
+        time.sleep(0.03)
+        user32.keybd_event(VK_CONTROL, 0, 2, 0)
+        time.sleep(0.05)
+
+    def _ctrl_a(self):
+        user32.keybd_event(VK_CONTROL, 0, 0, 0)
+        time.sleep(0.03)
+        user32.keybd_event(0x41, 0, 0, 0)
+        time.sleep(0.03)
+        user32.keybd_event(0x41, 0, 2, 0)
+        time.sleep(0.03)
+        user32.keybd_event(VK_CONTROL, 0, 2, 0)
+        time.sleep(0.05)
+
+    def _press_delete(self):
+        user32.keybd_event(0x2E, 0, 0, 0)
+        time.sleep(0.03)
+        user32.keybd_event(0x2E, 0, 2, 0)
+        time.sleep(0.03)
+
+    def _press_tab(self):
+        user32.keybd_event(VK_TAB, 0, 0, 0)
+        time.sleep(0.03)
+        user32.keybd_event(VK_TAB, 0, 2, 0)
+        time.sleep(0.03)
+
+    # ── 保留的点击辅助（降级方案，不再在主路径中使用） ──
+
     def _click_input_box(self):
-        """精准定位并点击聊天窗口内的输入框。"""
-        # 优先：枚举子窗口找输入框
+        """降级方案：枚举子窗口找输入框或估算坐标点击。"""
         input_hwnd, input_rect = self.tracker.find_chat_input_hwnd()
         if input_hwnd and input_rect:
             cx = (input_rect[0] + input_rect[2]) // 2
@@ -95,15 +169,24 @@ class TextInjector:
             self._click_position(cx, cy)
             time.sleep(0.05)
             return
-
-        # 降级：底部15%估算
         input_area = self.tracker.get_chat_input_area()
         if input_area:
             self._click_position(input_area[0], input_area[1])
             time.sleep(0.05)
 
+    def _click_position(self, x, y):
+        """模拟鼠标左键点击（全局坐标）。"""
+        abs_x = int(x * 65535 / user32.GetSystemMetrics(0))
+        abs_y = int(y * 65535 / user32.GetSystemMetrics(1))
+        user32.SetCursorPos(x, y)
+        time.sleep(0.02)
+        user32.mouse_event(0x8000 | 0x0002, abs_x, abs_y, 0, 0)
+        time.sleep(0.01)
+        user32.mouse_event(0x8000 | 0x0004, abs_x, abs_y, 0, 0)
+
+    # ── 窗口判断 ──────────────────────────────────────────
+
     def is_qianniu_chat_window(self, hwnd):
-        """判断窗口是否为千牛聊天窗口。"""
         if not hwnd or not win32gui.IsWindow(hwnd):
             return False
         try:
@@ -114,108 +197,4 @@ class TextInjector:
         return class_name == "Qt5152QWindowIcon" and ":" in title and self.tracker.CHAT_KEYWORD in title
 
     def _is_qianniu_chat_window(self, hwnd):
-        """兼容旧调用。"""
         return self.is_qianniu_chat_window(hwnd)
-
-    def inject_text(self, text, click_input=True):
-        """
-        将文本注入千牛输入框
-        
-        流程:
-        1. 保存剪贴板
-        2. 将文本写入剪贴板
-        3. 置千牛前台
-        4. 点击输入框区域使其获得焦点
-        5. Ctrl+V 粘贴
-        6. 还原剪贴板
-        
-        Args:
-            text: 要注入的文本
-            click_input: 是否先点击输入框（默认True）
-            
-        Returns:
-            bool: 是否成功
-        """
-        if not text:
-            return False
-
-        # 定位聊天窗口
-        chat_hwnd = self.tracker.find_chat_window()
-        if not chat_hwnd:
-            return False
-
-        # 1. 保存剪贴板
-        self.clipboard.save()
-
-        # 2. 将文本写入剪贴板
-        self.clipboard.write(text)
-
-        # 3. 置千牛前台
-        self.tracker.bring_to_front(chat_hwnd)
-        time.sleep(0.1)
-
-        # 4. 精准点击输入框
-        if click_input:
-            self._click_input_box()
-
-        # 5. Ctrl+V 粘贴
-        ctrl_v(delay=0.08)
-
-        # 6. 延时后还原剪贴板
-        time.sleep(0.1)
-        self.clipboard.restore()
-
-        return True
-
-    def inject_text_with_clear(self, text, click_input=True):
-        """注入文本前先清空输入框（Ctrl+A → 删除 → Ctrl+V）"""
-        if not text:
-            return False
-
-        chat_hwnd = self.tracker.find_chat_window()
-        if not chat_hwnd:
-            return False
-
-        # 保存剪贴板
-        self.clipboard.save()
-
-        # 将文本写入剪贴板
-        self.clipboard.write(text)
-
-        # 置千牛前台
-        self.tracker.bring_to_front(chat_hwnd)
-        time.sleep(0.1)
-
-        # 点击输入框
-        if click_input:
-            self._click_input_box()
-
-        # 清空输入框：Ctrl+A → Backspace/Delete
-        from .keyboard_ops import ctrl_a
-        ctrl_a(delay=0.05)
-        time.sleep(0.02)
-        # 发送 Delete 键
-        ctypes.windll.user32.keybd_event(0x2E, 0, 0, 0)  # VK_DELETE
-        time.sleep(0.02)
-        ctypes.windll.user32.keybd_event(0x2E, 0, 2, 0)
-        time.sleep(0.05)
-
-        # Ctrl+V 粘贴
-        ctrl_v(delay=0.08)
-
-        # 还原剪贴板
-        time.sleep(0.1)
-        self.clipboard.restore()
-
-        return True
-
-    def _click_position(self, x, y):
-        """模拟鼠标左键点击"""
-        user32 = ctypes.windll.user32
-        abs_x = int(x * 65535 / user32.GetSystemMetrics(0))
-        abs_y = int(y * 65535 / user32.GetSystemMetrics(1))
-        user32.SetCursorPos(x, y)
-        time.sleep(0.02)
-        user32.mouse_event(0x8000 | 0x0002, abs_x, abs_y, 0, 0)
-        time.sleep(0.01)
-        user32.mouse_event(0x8000 | 0x0004, abs_x, abs_y, 0, 0)
