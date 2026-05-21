@@ -54,7 +54,7 @@ class FloatingWindow:
         self._make_no_activate_window()
         self.root.configure(bg=self.COLOR_BG)
         self.root.geometry(f"{self.PANEL_WIDTH}x{self.DEFAULT_HEIGHT}+120+120")
-        self.root.minsize(self.PANEL_WIDTH, 430)
+        self.root.minsize(self.PANEL_WIDTH, 320)
 
         self._build_ui()
         self._bind_keys()

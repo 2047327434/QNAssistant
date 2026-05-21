@@ -82,11 +82,15 @@ class WindowTracker:
             if x + panel_width > screen_w:
                 x = max(left, screen_w - panel_width)
 
-            # 底部对齐千牛窗口，高度至少 400
+            # 底部对齐千牛窗口；若工具最小高度 > 千牛高度，退化为顶部对齐
             target_bottom = min(bottom, screen_h)
-            h = min(bottom - top, screen_h)
-            h = max(h, 400)
-            y = max(0, target_bottom - h)
+            h = max(bottom - top, 320)
+            if h > bottom - top:
+                # 工具比千牛高，退化为顶部对齐避免底部溢出
+                y = max(0, top)
+                h = min(h, screen_h - y)
+            else:
+                y = max(0, target_bottom - h)
 
             return (x, y, panel_width, h)
         return None
