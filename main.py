@@ -1,6 +1,5 @@
-"""千牛话术助手 - 无边框悬浮窗，点击话术自动填充到千牛输入框"""
+"""千牛话术助手 - 美化无边框悬浮窗，点击话术自动填充到千牛输入框"""
 import os
-import sys
 import tkinter as tk
 
 import win32con
@@ -15,11 +14,21 @@ from ui.phrases_panel import PhrasesPanel
 class FloatingWindow:
     """千牛话术助手悬浮窗"""
 
-    PANEL_WIDTH = 260
-    DEFAULT_HEIGHT = 620
+    PANEL_WIDTH = 300
+    DEFAULT_HEIGHT = 640
     TRACK_INTERVAL = 250
-    ICON_SIZE = 56
+    ICON_SIZE = 60
     TRANSPARENT_COLOR = "#ff00ff"
+
+    COLOR_PRIMARY = "#1677ff"
+    COLOR_PRIMARY_DARK = "#0f5fd7"
+    COLOR_TITLE = "#111827"
+    COLOR_BG = "#e8eef7"
+    COLOR_CARD = "#ffffff"
+    COLOR_MUTED = "#6b7280"
+    COLOR_BORDER = "#d8e2ef"
+    COLOR_SUCCESS = "#16a34a"
+    COLOR_WARN = "#d97706"
 
     def __init__(self):
         self.app_root = get_app_root()
@@ -40,12 +49,12 @@ class FloatingWindow:
 
         self.root = tk.Tk()
         self.root.title("千牛话术助手")
-        self.root.overrideredirect(True)  # 无系统边框
+        self.root.overrideredirect(True)
         self.root.attributes("-topmost", True)
         self._make_no_activate_window()
-        self.root.configure(bg="#d7dce2")
+        self.root.configure(bg=self.COLOR_BG)
         self.root.geometry(f"{self.PANEL_WIDTH}x{self.DEFAULT_HEIGHT}+120+120")
-        self.root.minsize(self.PANEL_WIDTH, 400)
+        self.root.minsize(self.PANEL_WIDTH, 430)
 
         self._build_ui()
         self._bind_keys()
@@ -54,73 +63,89 @@ class FloatingWindow:
         self._track_loop()
 
     def _build_ui(self):
-        # 外层边框
-        self.outer = tk.Frame(self.root, bg="#d7dce2", bd=0)
+        self.outer = tk.Frame(self.root, bg=self.COLOR_BG, bd=0)
         self.outer.pack(fill=tk.BOTH, expand=True)
 
-        # 自定义标题栏
-        self.title_bar = tk.Frame(self.outer, bg="#2f80ed", height=34)
-        self.title_bar.pack(fill=tk.X, padx=1, pady=(1, 0))
+        self.shell = tk.Frame(
+            self.outer,
+            bg=self.COLOR_CARD,
+            bd=0,
+            highlightthickness=1,
+            highlightbackground=self.COLOR_BORDER,
+            highlightcolor=self.COLOR_BORDER
+        )
+        self.shell.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
+
+        self.title_bar = tk.Frame(self.shell, bg=self.COLOR_TITLE, height=46)
+        self.title_bar.pack(fill=tk.X)
         self.title_bar.pack_propagate(False)
         self.title_bar.bind("<ButtonPress-1>", self._start_drag)
         self.title_bar.bind("<B1-Motion>", self._on_drag)
         self.title_bar.bind("<Double-Button-1>", self._toggle_auto_track)
 
+        brand = tk.Frame(self.title_bar, bg=self.COLOR_TITLE)
+        brand.pack(side=tk.LEFT, fill=tk.Y, padx=(12, 4))
+        brand.bind("<ButtonPress-1>", self._start_drag)
+        brand.bind("<B1-Motion>", self._on_drag)
+        brand.bind("<Double-Button-1>", self._toggle_auto_track)
+
+        logo = tk.Label(
+            brand,
+            text="千",
+            font=("Microsoft YaHei UI", 10, "bold"),
+            bg=self.COLOR_PRIMARY,
+            fg="white",
+            width=2,
+            height=1
+        )
+        logo.pack(side=tk.LEFT, pady=10)
+        logo.bind("<ButtonPress-1>", self._start_drag)
+        logo.bind("<B1-Motion>", self._on_drag)
+        logo.bind("<Double-Button-1>", self._toggle_auto_track)
+
+        title_wrap = tk.Frame(brand, bg=self.COLOR_TITLE)
+        title_wrap.pack(side=tk.LEFT, padx=(8, 0), pady=6)
+        title_wrap.bind("<ButtonPress-1>", self._start_drag)
+        title_wrap.bind("<B1-Motion>", self._on_drag)
+        title_wrap.bind("<Double-Button-1>", self._toggle_auto_track)
+
         self.title_label = tk.Label(
-            self.title_bar,
+            title_wrap,
             text="千牛话术助手",
             font=("Microsoft YaHei UI", 10, "bold"),
-            bg="#2f80ed",
-            fg="white"
+            bg=self.COLOR_TITLE,
+            fg="white",
+            anchor="w"
         )
-        self.title_label.pack(side=tk.LEFT, padx=10)
+        self.title_label.pack(anchor="w")
         self.title_label.bind("<ButtonPress-1>", self._start_drag)
         self.title_label.bind("<B1-Motion>", self._on_drag)
         self.title_label.bind("<Double-Button-1>", self._toggle_auto_track)
 
-        tk.Button(
-            self.title_bar,
-            text="×",
-            font=("Microsoft YaHei UI", 12, "bold"),
-            bg="#2f80ed",
-            fg="white",
-            activebackground="#d9534f",
-            activeforeground="white",
-            relief=tk.FLAT,
-            command=self.root.destroy,
-            width=3
-        ).pack(side=tk.RIGHT)
-
-        tk.Button(
-            self.title_bar,
-            text="—",
-            font=("Microsoft YaHei UI", 12, "bold"),
-            bg="#2f80ed",
-            fg="white",
-            activebackground="#1d6fd4",
-            activeforeground="white",
-            relief=tk.FLAT,
-            command=self._minimize,
-            width=3
-        ).pack(side=tk.RIGHT)
-
-        self.track_btn = tk.Button(
-            self.title_bar,
-            text="吸附",
-            font=("Microsoft YaHei UI", 8),
-            bg="#2f80ed",
-            fg="white",
-            activebackground="#1d6fd4",
-            activeforeground="white",
-            relief=tk.FLAT,
-            command=self._toggle_auto_track,
-            width=5
+        subtitle = tk.Label(
+            title_wrap,
+            text="常用回复 · 一键上屏",
+            font=("Microsoft YaHei UI", 7),
+            bg=self.COLOR_TITLE,
+            fg="#9ca3af",
+            anchor="w"
         )
-        self.track_btn.pack(side=tk.RIGHT)
+        subtitle.pack(anchor="w")
+        subtitle.bind("<ButtonPress-1>", self._start_drag)
+        subtitle.bind("<B1-Motion>", self._on_drag)
+        subtitle.bind("<Double-Button-1>", self._toggle_auto_track)
 
-        # 内容区域
-        body = tk.Frame(self.outer, bg="white")
-        body.pack(fill=tk.BOTH, expand=True, padx=1)
+        close_btn = self._make_title_button("×", self.root.destroy, hover_bg="#ef4444", width=3)
+        close_btn.pack(side=tk.RIGHT, padx=(0, 6), pady=8)
+
+        min_btn = self._make_title_button("—", self._minimize, hover_bg="#374151", width=3)
+        min_btn.pack(side=tk.RIGHT, pady=8)
+
+        self.track_btn = self._make_title_button("自动", self._toggle_auto_track, hover_bg="#374151", width=5)
+        self.track_btn.pack(side=tk.RIGHT, padx=(0, 4), pady=8)
+
+        body = tk.Frame(self.shell, bg="#f5f8fc")
+        body.pack(fill=tk.BOTH, expand=True)
 
         self.phrases_panel = PhrasesPanel(
             body,
@@ -128,20 +153,47 @@ class FloatingWindow:
             on_phrase_click=self._on_phrase_copied
         )
 
-        # 底部状态栏
-        status_frame = tk.Frame(self.outer, bg="#f7f8fa", height=24)
-        status_frame.pack(fill=tk.X, padx=1, pady=(0, 1))
+        status_frame = tk.Frame(self.shell, bg="#ffffff", height=30)
+        status_frame.pack(fill=tk.X)
         status_frame.pack_propagate(False)
+
+        self.status_dot = tk.Label(
+            status_frame,
+            text="●",
+            font=("Microsoft YaHei UI", 8),
+            bg="#ffffff",
+            fg=self.COLOR_MUTED
+        )
+        self.status_dot.pack(side=tk.LEFT, padx=(10, 4))
 
         self.status_label = tk.Label(
             status_frame,
             text=f"话术文件：{os.path.basename(self.phrases_path)}",
             font=("Microsoft YaHei UI", 8),
-            bg="#f7f8fa",
-            fg="#666",
+            bg="#ffffff",
+            fg=self.COLOR_MUTED,
             anchor="w"
         )
-        self.status_label.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=8)
+        self.status_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+    def _make_title_button(self, text, command, hover_bg, width=3):
+        btn = tk.Button(
+            self.title_bar,
+            text=text,
+            font=("Microsoft YaHei UI", 9, "bold"),
+            bg=self.COLOR_TITLE,
+            fg="#f9fafb",
+            activebackground=hover_bg,
+            activeforeground="white",
+            relief=tk.FLAT,
+            bd=0,
+            command=command,
+            width=width,
+            cursor="hand2"
+        )
+        btn.bind("<Enter>", lambda e, b=btn: b.configure(bg=hover_bg))
+        btn.bind("<Leave>", lambda e, b=btn: b.configure(bg=self.COLOR_TITLE))
+        return btn
 
     def _bind_keys(self):
         self.root.bind("<Escape>", lambda e: self.root.destroy())
@@ -156,7 +208,6 @@ class FloatingWindow:
             ex_style |= win32con.WS_EX_NOACTIVATE | win32con.WS_EX_TOOLWINDOW
             win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, ex_style)
         except Exception:
-            # 某些环境下设置扩展样式可能失败，不影响程序启动
             pass
 
     def _apply_click_through_focus_fix(self):
@@ -170,7 +221,6 @@ class FloatingWindow:
             pass
 
     def _wnd_proc(self, hwnd, msg, wparam, lparam):
-        # MA_NOACTIVATE = 3。允许鼠标点击消息继续传给按钮/列表，但不要激活工具窗口。
         if msg == win32con.WM_MOUSEACTIVATE:
             return 3
         if self._old_wnd_proc:
@@ -204,7 +254,8 @@ class FloatingWindow:
             self._initial_position()
 
     def _update_track_button(self):
-        self.track_btn.config(text="吸附" if self._auto_track else "手动")
+        if hasattr(self, "track_btn"):
+            self.track_btn.config(text="自动" if self._auto_track else "手动")
 
     def _minimize(self):
         """隐藏主界面，显示可拖动圆形图标。"""
@@ -234,24 +285,35 @@ class FloatingWindow:
             height=self.ICON_SIZE,
             bg=self.TRANSPARENT_COLOR,
             highlightthickness=0,
-            bd=0
+            bd=0,
+            cursor="hand2"
         )
         self.icon_canvas.pack(fill=tk.BOTH, expand=True)
-        self.icon_canvas.create_oval(3, 3, self.ICON_SIZE - 3, self.ICON_SIZE - 3, fill="#2f80ed", outline="#ffffff", width=2)
-        self.icon_canvas.create_text(self.ICON_SIZE // 2, 20, text="千", fill="white", font=("Microsoft YaHei UI", 14, "bold"))
-        self.icon_canvas.create_text(self.ICON_SIZE // 2, 38, text="话术", fill="white", font=("Microsoft YaHei UI", 8, "bold"))
+        self._draw_icon(normal=True)
 
         for widget in (self.icon_window, self.icon_canvas):
             widget.bind("<ButtonPress-1>", self._start_icon_drag)
             widget.bind("<B1-Motion>", self._on_icon_drag)
             widget.bind("<ButtonRelease-1>", self._on_icon_release)
+            widget.bind("<Enter>", lambda e: self._draw_icon(normal=False))
+            widget.bind("<Leave>", lambda e: self._draw_icon(normal=True))
+
+    def _draw_icon(self, normal=True):
+        if not self.icon_canvas:
+            return
+        self.icon_canvas.delete("all")
+        fill = self.COLOR_PRIMARY if normal else self.COLOR_PRIMARY_DARK
+        self.icon_canvas.create_oval(4, 6, self.ICON_SIZE - 2, self.ICON_SIZE, fill="#8fbdfc", outline="")
+        self.icon_canvas.create_oval(3, 3, self.ICON_SIZE - 5, self.ICON_SIZE - 5, fill=fill, outline="#ffffff", width=2)
+        self.icon_canvas.create_text(self.ICON_SIZE // 2 - 1, 21, text="千", fill="white", font=("Microsoft YaHei UI", 15, "bold"))
+        self.icon_canvas.create_text(self.ICON_SIZE // 2 - 1, 40, text="话术", fill="white", font=("Microsoft YaHei UI", 8, "bold"))
 
     def _get_icon_position(self):
         screen_w = self.root.winfo_screenwidth()
         screen_h = self.root.winfo_screenheight()
         try:
-            x = self.root.winfo_x() + self.PANEL_WIDTH - self.ICON_SIZE - 8
-            y = self.root.winfo_y() + 44
+            x = self.root.winfo_x() + self.PANEL_WIDTH - self.ICON_SIZE - 10
+            y = self.root.winfo_y() + 52
         except Exception:
             x = screen_w - self.ICON_SIZE - 20
             y = screen_h // 2
@@ -284,40 +346,45 @@ class FloatingWindow:
         self._update_track_button()
         self._initial_position()
 
+    def _set_status(self, text, color=None):
+        color = color or self.COLOR_MUTED
+        self.status_label.config(text=text, fg=color)
+        self.status_dot.config(fg=color)
+
     def _initial_position(self):
         pos = self.tracker.get_floating_position(self.PANEL_WIDTH)
         if pos:
             x, y, w, h = pos
             self.root.geometry(f"{w}x{h}+{x}+{y}")
-            self.status_label.config(text=f"已吸附千牛 · 话术文件：{os.path.basename(self.phrases_path)}", fg="#2b8a3e")
+            self._set_status(f"已吸附千牛 · 话术文件：{os.path.basename(self.phrases_path)}", self.COLOR_SUCCESS)
         else:
-            self.status_label.config(text="未找到千牛，可手动拖动窗口 · 双击标题栏切换吸附", fg="#cc7a00")
+            self._set_status("未找到千牛，可手动拖动窗口 · 双击标题栏切换吸附", self.COLOR_WARN)
 
     def _track_loop(self):
         self._remember_active_chat_window()
-        if self._auto_track:
+        if self._auto_track and self.root.state() != "withdrawn":
             pos = self.tracker.get_floating_position(self.PANEL_WIDTH)
             if pos and not self.tracker.is_window_minimized():
                 x, y, w, h = pos
                 self.root.geometry(f"{w}x{h}+{x}+{y}")
-                self.status_label.config(text=f"已吸附千牛 · 点击话术自动上屏", fg="#2b8a3e")
+                self._set_status("已吸附千牛 · 点击话术自动上屏", self.COLOR_SUCCESS)
             elif not pos:
-                self.status_label.config(text="未找到千牛，可手动拖动窗口", fg="#cc7a00")
+                self._set_status("未找到千牛，可手动拖动窗口", self.COLOR_WARN)
             self.tracker.refresh()
         self.root.after(self.TRACK_INTERVAL, self._track_loop)
 
     def _on_phrase_copied(self, content):
         preview = content.replace("\n", " ")[:24]
-        self.status_label.config(text=f"正在上屏：{preview}", fg="#2f80ed")
+        self._set_status(f"正在上屏：{preview}", self.COLOR_PRIMARY)
         self.root.update_idletasks()
 
         ok = self.injector.inject_to_last_or_chat(content, self._last_chat_hwnd)
         if ok:
-            self.status_label.config(text=f"已上屏：{preview}", fg="#2b8a3e")
+            self._set_status(f"已上屏：{preview}", self.COLOR_SUCCESS)
         else:
-            self.status_label.config(text="未找到千牛聊天窗口，已复制到剪贴板", fg="#cc7a00")
+            self._set_status("未找到千牛聊天窗口，已复制到剪贴板", self.COLOR_WARN)
 
-        self.root.after(1800, lambda: self.status_label.config(text="点击话术自动填充到千牛输入框", fg="#666"))
+        self.root.after(1800, lambda: self._set_status("点击话术自动填充到千牛输入框", self.COLOR_MUTED))
 
     def run(self):
         self.root.mainloop()

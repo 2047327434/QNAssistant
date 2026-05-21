@@ -6,12 +6,22 @@ from core.clipboard_ops import ClipboardOps
 class PhrasesPanel:
     """话术面板：从工具根目录 phrases.txt 读取，点击话术复制到剪贴板并触发回调。"""
 
+    COLOR_PRIMARY = "#1677ff"
+    COLOR_PRIMARY_LIGHT = "#e8f2ff"
+    COLOR_BG = "#f5f8fc"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#111827"
+    COLOR_MUTED = "#6b7280"
+    COLOR_BORDER = "#e2e8f0"
+    COLOR_HOVER = "#f0f7ff"
+
     def __init__(self, parent, phrases_path, on_phrase_click=None):
         self.parent = parent
         self.phrases_path = phrases_path
         self.on_phrase_click = on_phrase_click
         self.clipboard = ClipboardOps()
         self.current_group_index = 0
+        self.group_buttons = []
 
         self.phrases_data = self._load_phrases()
         self._build_ui()
@@ -36,9 +46,7 @@ class PhrasesPanel:
 
         for raw in lines:
             line = raw.strip()
-            if not line:
-                continue
-            if line.startswith("#"):
+            if not line or line.startswith("#"):
                 continue
 
             if line.startswith("[") and line.endswith("]"):
@@ -79,37 +87,74 @@ class PhrasesPanel:
             f.write("\n".join(parts).strip() + "\n")
 
     def _build_ui(self):
-        # 顶部工具栏
-        toolbar = tk.Frame(self.parent, bg="#f7f8fa")
-        toolbar.pack(fill=tk.X, padx=8, pady=(8, 4))
+        self.container = tk.Frame(self.parent, bg=self.COLOR_BG)
+        self.container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        toolbar = tk.Frame(self.container, bg=self.COLOR_BG)
+        toolbar.pack(fill=tk.X, pady=(0, 10))
+
+        search_wrap = tk.Frame(
+            toolbar,
+            bg=self.COLOR_CARD,
+            highlightthickness=1,
+            highlightbackground=self.COLOR_BORDER,
+            highlightcolor=self.COLOR_PRIMARY
+        )
+        search_wrap.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=1)
+
+        tk.Label(
+            search_wrap,
+            text="搜",
+            font=("Microsoft YaHei UI", 9, "bold"),
+            bg=self.COLOR_CARD,
+            fg=self.COLOR_MUTED
+        ).pack(side=tk.LEFT, padx=(9, 0))
 
         self.search_var = tk.StringVar()
-        self.search_entry = tk.Entry(toolbar, textvariable=self.search_var, font=("Microsoft YaHei UI", 9), relief=tk.FLAT)
-        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=4)
+        self.search_entry = tk.Entry(
+            search_wrap,
+            textvariable=self.search_var,
+            font=("Microsoft YaHei UI", 9),
+            relief=tk.FLAT,
+            bd=0,
+            bg=self.COLOR_CARD,
+            fg=self.COLOR_MUTED,
+            insertbackground=self.COLOR_PRIMARY
+        )
+        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=7, ipady=7)
         self.search_entry.insert(0, "搜索话术...")
         self.search_entry.bind("<FocusIn>", self._clear_placeholder)
         self.search_entry.bind("<FocusOut>", self._restore_placeholder)
 
-        tk.Button(toolbar, text="编辑", font=("Microsoft YaHei UI", 9), relief=tk.FLAT, command=self._open_edit_dialog).pack(side=tk.RIGHT, padx=(6, 0))
-        tk.Button(toolbar, text="刷新", font=("Microsoft YaHei UI", 9), relief=tk.FLAT, command=self.reload).pack(side=tk.RIGHT, padx=(6, 0))
+        self._make_toolbar_button(toolbar, "刷新", self.reload).pack(side=tk.RIGHT, padx=(7, 0))
+        self._make_toolbar_button(toolbar, "编辑", self._open_edit_dialog, primary=True).pack(side=tk.RIGHT, padx=(7, 0))
 
-        # 内容区
-        content = tk.Frame(self.parent, bg="white")
-        content.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+        content = tk.Frame(self.container, bg=self.COLOR_BG)
+        content.pack(fill=tk.BOTH, expand=True)
 
-        self.group_listbox = tk.Listbox(
-            content, width=12, font=("Microsoft YaHei UI", 9), relief=tk.FLAT,
-            borderwidth=0, activestyle="none", selectbackground="#2f80ed", selectforeground="white"
+        left = tk.Frame(content, bg=self.COLOR_CARD, width=86, highlightthickness=1, highlightbackground=self.COLOR_BORDER)
+        left.pack(side=tk.LEFT, fill=tk.Y)
+        left.pack_propagate(False)
+
+        group_header = tk.Label(
+            left,
+            text="分组",
+            font=("Microsoft YaHei UI", 8, "bold"),
+            bg=self.COLOR_CARD,
+            fg=self.COLOR_MUTED,
+            anchor="w"
         )
-        self.group_listbox.pack(side=tk.LEFT, fill=tk.Y)
-        self.group_listbox.bind("<<ListboxSelect>>", self._on_group_select)
+        group_header.pack(fill=tk.X, padx=10, pady=(10, 6))
 
-        right = tk.Frame(content, bg="white")
-        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(8, 0))
+        self.group_frame = tk.Frame(left, bg=self.COLOR_CARD)
+        self.group_frame.pack(fill=tk.BOTH, expand=True, padx=7, pady=(0, 8))
 
-        self.items_canvas = tk.Canvas(right, bg="white", highlightthickness=0)
-        self.items_scrollbar = tk.Scrollbar(right, orient=tk.VERTICAL, command=self.items_canvas.yview)
-        self.items_frame = tk.Frame(self.items_canvas, bg="white")
+        right = tk.Frame(content, bg=self.COLOR_BG)
+        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0))
+
+        self.items_canvas = tk.Canvas(right, bg=self.COLOR_BG, highlightthickness=0, bd=0)
+        self.items_scrollbar = tk.Scrollbar(right, orient=tk.VERTICAL, command=self.items_canvas.yview, relief=tk.FLAT, bd=0)
+        self.items_frame = tk.Frame(self.items_canvas, bg=self.COLOR_BG)
         self.items_window = self.items_canvas.create_window((0, 0), window=self.items_frame, anchor="nw")
         self.items_canvas.configure(yscrollcommand=self.items_scrollbar.set)
         self.items_frame.bind("<Configure>", lambda e: self.items_canvas.configure(scrollregion=self.items_canvas.bbox("all")))
@@ -120,35 +165,88 @@ class PhrasesPanel:
         self.items_canvas.bind("<Leave>", lambda e: self.items_canvas.unbind_all("<MouseWheel>"))
         self.search_var.trace_add("write", self._on_search)
 
+    def _make_toolbar_button(self, parent, text, command, primary=False):
+        bg = self.COLOR_PRIMARY if primary else self.COLOR_CARD
+        fg = "white" if primary else self.COLOR_TEXT
+        hover = "#0f5fd7" if primary else self.COLOR_HOVER
+        btn = tk.Button(
+            parent,
+            text=text,
+            font=("Microsoft YaHei UI", 9, "bold" if primary else "normal"),
+            bg=bg,
+            fg=fg,
+            activebackground=hover,
+            activeforeground=fg,
+            relief=tk.FLAT,
+            bd=0,
+            command=command,
+            padx=10,
+            pady=6,
+            cursor="hand2"
+        )
+        btn.bind("<Enter>", lambda e, b=btn: b.configure(bg=hover))
+        btn.bind("<Leave>", lambda e, b=btn: b.configure(bg=bg))
+        return btn
+
     def _clear_placeholder(self, event):
         if self.search_var.get() == "搜索话术...":
+            self.search_entry.config(fg=self.COLOR_TEXT)
             self.search_var.set("")
 
     def _restore_placeholder(self, event):
         if not self.search_var.get().strip():
+            self.search_entry.config(fg=self.COLOR_MUTED)
             self.search_var.set("搜索话术...")
 
     def _on_mousewheel(self, event):
         self.items_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _populate_groups(self):
-        self.group_listbox.delete(0, tk.END)
-        for group in self.phrases_data.get("groups", []):
-            self.group_listbox.insert(tk.END, group["name"])
-        if self.phrases_data.get("groups"):
-            idx = min(self.current_group_index, len(self.phrases_data["groups"]) - 1)
-            self.group_listbox.select_set(idx)
-            self.current_group_index = idx
-            self._show_items(self.phrases_data["groups"][idx].get("items", []))
+        for widget in self.group_frame.winfo_children():
+            widget.destroy()
+        self.group_buttons = []
+
+        groups = self.phrases_data.get("groups", [])
+        for idx, group in enumerate(groups):
+            btn = tk.Label(
+                self.group_frame,
+                text=group["name"],
+                font=("Microsoft YaHei UI", 8, "bold" if idx == self.current_group_index else "normal"),
+                bg=self.COLOR_PRIMARY if idx == self.current_group_index else self.COLOR_CARD,
+                fg="white" if idx == self.current_group_index else self.COLOR_TEXT,
+                anchor="w",
+                cursor="hand2",
+                padx=8,
+                pady=7
+            )
+            btn.pack(fill=tk.X, pady=2)
+            btn.bind("<Button-1>", lambda e, i=idx: self._select_group(i))
+            btn.bind("<Enter>", lambda e, b=btn, i=idx: self._hover_group(b, i, True))
+            btn.bind("<Leave>", lambda e, b=btn, i=idx: self._hover_group(b, i, False))
+            self.group_buttons.append(btn)
+
+        if groups:
+            self.current_group_index = min(self.current_group_index, len(groups) - 1)
+            self._select_group(self.current_group_index, refresh_buttons=True)
         else:
             self._show_items([])
 
-    def _on_group_select(self, event):
-        selection = self.group_listbox.curselection()
-        if not selection:
+    def _hover_group(self, button, idx, enter):
+        if idx == self.current_group_index:
             return
-        self.current_group_index = selection[0]
-        group = self.phrases_data["groups"][self.current_group_index]
+        button.configure(bg=self.COLOR_HOVER if enter else self.COLOR_CARD)
+
+    def _select_group(self, idx, refresh_buttons=True):
+        self.current_group_index = idx
+        if refresh_buttons:
+            for i, btn in enumerate(self.group_buttons):
+                selected = i == idx
+                btn.configure(
+                    bg=self.COLOR_PRIMARY if selected else self.COLOR_CARD,
+                    fg="white" if selected else self.COLOR_TEXT,
+                    font=("Microsoft YaHei UI", 8, "bold" if selected else "normal")
+                )
+        group = self.phrases_data["groups"][idx]
         self._show_items(group.get("items", []))
 
     def _show_items(self, items):
@@ -156,22 +254,84 @@ class PhrasesPanel:
             widget.destroy()
 
         if not items:
-            tk.Label(self.items_frame, text="暂无话术", font=("Microsoft YaHei UI", 9), fg="#888", bg="white").pack(anchor="w", pady=10)
+            empty = tk.Frame(self.items_frame, bg=self.COLOR_CARD, highlightthickness=1, highlightbackground=self.COLOR_BORDER)
+            empty.pack(fill=tk.X, pady=4)
+            tk.Label(
+                empty,
+                text="暂无话术",
+                font=("Microsoft YaHei UI", 10, "bold"),
+                fg=self.COLOR_MUTED,
+                bg=self.COLOR_CARD
+            ).pack(anchor="w", padx=14, pady=(14, 2))
+            tk.Label(
+                empty,
+                text="点击“编辑”添加常用回复",
+                font=("Microsoft YaHei UI", 8),
+                fg=self.COLOR_MUTED,
+                bg=self.COLOR_CARD
+            ).pack(anchor="w", padx=14, pady=(0, 14))
             return
 
         for item in items:
-            row = tk.Frame(self.items_frame, bg="white", bd=1, relief=tk.SOLID)
-            row.pack(fill=tk.X, pady=4)
+            self._create_phrase_card(item)
 
-            title = tk.Label(row, text=item["title"], font=("Microsoft YaHei UI", 9, "bold"), bg="white", anchor="w")
-            title.pack(fill=tk.X, padx=8, pady=(6, 1))
-            content = tk.Label(row, text=item["content"], font=("Microsoft YaHei UI", 9), bg="white", fg="#333", anchor="w", justify=tk.LEFT, wraplength=160)
-            content.pack(fill=tk.X, padx=8, pady=(0, 6))
+    def _create_phrase_card(self, item):
+        row = tk.Frame(
+            self.items_frame,
+            bg=self.COLOR_CARD,
+            bd=0,
+            highlightthickness=1,
+            highlightbackground=self.COLOR_BORDER,
+            highlightcolor=self.COLOR_PRIMARY,
+            cursor="hand2"
+        )
+        row.pack(fill=tk.X, pady=(0, 8))
 
-            for w in (row, title, content):
-                w.bind("<Button-1>", lambda e, text=item["content"]: self._copy_phrase(text))
-                w.bind("<Enter>", lambda e, r=row: r.configure(bg="#eef6ff"))
-                w.bind("<Leave>", lambda e, r=row: r.configure(bg="white"))
+        title = tk.Label(
+            row,
+            text=item["title"],
+            font=("Microsoft YaHei UI", 9, "bold"),
+            bg=self.COLOR_CARD,
+            fg=self.COLOR_TEXT,
+            anchor="w",
+            cursor="hand2"
+        )
+        title.pack(fill=tk.X, padx=12, pady=(10, 3))
+
+        content = tk.Label(
+            row,
+            text=item["content"],
+            font=("Microsoft YaHei UI", 8),
+            bg=self.COLOR_CARD,
+            fg="#374151",
+            anchor="w",
+            justify=tk.LEFT,
+            wraplength=168,
+            cursor="hand2"
+        )
+        content.pack(fill=tk.X, padx=12, pady=(0, 9))
+
+        hint = tk.Label(
+            row,
+            text="点击上屏",
+            font=("Microsoft YaHei UI", 7),
+            bg=self.COLOR_CARD,
+            fg=self.COLOR_PRIMARY,
+            anchor="e",
+            cursor="hand2"
+        )
+        hint.pack(fill=tk.X, padx=12, pady=(0, 9))
+
+        widgets = (row, title, content, hint)
+        for w in widgets:
+            w.bind("<Button-1>", lambda e, text=item["content"]: self._copy_phrase(text))
+            w.bind("<Enter>", lambda e, widgets=widgets: self._set_card_hover(widgets, True))
+            w.bind("<Leave>", lambda e, widgets=widgets: self._set_card_hover(widgets, False))
+
+    def _set_card_hover(self, widgets, hover):
+        bg = self.COLOR_HOVER if hover else self.COLOR_CARD
+        for w in widgets:
+            w.configure(bg=bg)
 
     def _copy_phrase(self, content):
         self.clipboard.write(content)
