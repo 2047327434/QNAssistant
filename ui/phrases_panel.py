@@ -100,7 +100,7 @@ class PhrasesPanel:
         self.search_entry = tk.Entry(
             search_inner,
             textvariable=self.search_var,
-            font=("Microsoft YaHei UI", 9),
+            font=("Microsoft YaHei UI", 10),
             relief=tk.FLAT, bd=0,
             bg=self.COLOR_CARD, fg=self.COLOR_MUTED,
             insertbackground=self.COLOR_PRIMARY,
@@ -123,7 +123,7 @@ class PhrasesPanel:
         left.pack(side=tk.LEFT, fill=tk.Y)
         left.pack_propagate(False)
 
-        tk.Label(left, text="分组", font=("Microsoft YaHei UI", 7),
+        tk.Label(left, text="分组", font=("Microsoft YaHei UI", 9),
                  bg=self.COLOR_CARD, fg=self.COLOR_MUTED, anchor="w"
                  ).pack(fill=tk.X, padx=10, pady=(10, 4))
 
@@ -181,7 +181,7 @@ class PhrasesPanel:
                 pass
 
     def _icon_label(self, parent, char):
-        return tk.Label(parent, text=char, font=("Segoe UI Symbol", 11),
+        return tk.Label(parent, text=char, font=("Segoe UI Symbol", 12),
                         bg=self.COLOR_CARD, fg=self.COLOR_MUTED)
 
     def _make_tool_btn(self, parent, text, command, style="hint"):
@@ -189,12 +189,12 @@ class PhrasesPanel:
             bg = self.COLOR_PRIMARY
             fg = "#ffffff"
             hover = "#4a5ad9"
-            font = ("Microsoft YaHei UI", 9, "bold")
+            font = ("Microsoft YaHei UI", 10, "bold")
         else:
             bg = self.COLOR_TAG_BG
             fg = self.COLOR_TAG_FG
             hover = "#e4e5ee"
-            font = ("Microsoft YaHei UI", 9)
+            font = ("Microsoft YaHei UI", 10)
         btn = tk.Button(parent, text=text, font=font, bg=bg, fg=fg,
                         activebackground=hover, activeforeground=fg,
                         relief=tk.FLAT, bd=0, command=command,
@@ -230,7 +230,7 @@ class PhrasesPanel:
             is_sel = idx == self.current_group_index
             btn = tk.Label(
                 self.group_frame, text=group["name"],
-                font=("Microsoft YaHei UI", 8, "bold" if is_sel else "normal"),
+                font=("Microsoft YaHei UI", 9, "bold" if is_sel else "normal"),
                 bg=self.COLOR_PRIMARY if is_sel else self.COLOR_CARD,
                 fg="white" if is_sel else self.COLOR_TEXT,
                 anchor="w", cursor="hand2", padx=8, pady=6,
@@ -260,7 +260,7 @@ class PhrasesPanel:
                 btn.configure(
                     bg=self.COLOR_PRIMARY if sel else self.COLOR_CARD,
                     fg="white" if sel else self.COLOR_TEXT,
-                    font=("Microsoft YaHei UI", 8, "bold" if sel else "normal"),
+                    font=("Microsoft YaHei UI", 9, "bold" if sel else "normal"),
                 )
         group = self.phrases_data["groups"][idx]
         self._show_items(group.get("items", []))
@@ -279,7 +279,7 @@ class PhrasesPanel:
             tk.Label(empty, text="暂无话术", font=("Microsoft YaHei UI", 10, "bold"),
                      fg=self.COLOR_MUTED, bg=self.COLOR_CARD
                      ).pack(anchor="w", padx=14, pady=(14, 2))
-            tk.Label(empty, text="点击编辑添加常用回复", font=("Microsoft YaHei UI", 8),
+            tk.Label(empty, text="点击编辑添加常用回复", font=("Microsoft YaHei UI", 9),
                      fg=self.COLOR_MUTED, bg=self.COLOR_CARD
                      ).pack(anchor="w", padx=14, pady=(0, 14))
             return
@@ -304,7 +304,7 @@ class PhrasesPanel:
 
         # 标题
         title = tk.Label(row, text=item["title"],
-                         font=("Microsoft YaHei UI", 9, "bold"),
+                         font=("Microsoft YaHei UI", 10, "bold"),
                          bg=self.COLOR_CARD, fg=self.COLOR_TEXT,
                          anchor="w", cursor="hand2")
         title.pack(fill=tk.X, padx=self.CARD_PAD_X, pady=(9, 2))
@@ -314,7 +314,7 @@ class PhrasesPanel:
         init_wl = self._card_wraplength(cw) if cw > 60 else 180
 
         content = tk.Label(row, text=item["content"],
-                           font=("Microsoft YaHei UI", 8),
+                           font=("Microsoft YaHei UI", 9),
                            bg=self.COLOR_CARD, fg="#4b4d5c",
                            anchor="w", justify=tk.LEFT,
                            wraplength=init_wl, cursor="hand2")

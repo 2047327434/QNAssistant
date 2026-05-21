@@ -122,7 +122,7 @@ class FloatingWindow:
         logo = tk.Label(
             brand,
             text="千",
-            font=("Microsoft YaHei UI", 10, "bold"),
+            font=("Microsoft YaHei UI", 12, "bold"),
             bg=self.COLOR_PRIMARY,
             fg="white",
             width=2,
@@ -142,7 +142,7 @@ class FloatingWindow:
         self.title_label = tk.Label(
             title_wrap,
             text="千牛话术助手",
-            font=("Microsoft YaHei UI", 10, "bold"),
+            font=("Microsoft YaHei UI", 12, "bold"),
             bg=self.COLOR_TITLE,
             fg="white",
             anchor="w"
@@ -155,7 +155,7 @@ class FloatingWindow:
         subtitle = tk.Label(
             title_wrap,
             text="常用回复 · 一键上屏",
-            font=("Microsoft YaHei UI", 7),
+            font=("Microsoft YaHei UI", 9),
             bg=self.COLOR_TITLE,
             fg="#9ca3af",
             anchor="w"
@@ -190,7 +190,7 @@ class FloatingWindow:
         self.status_dot = tk.Label(
             status_frame,
             text="●",
-            font=("Microsoft YaHei UI", 8),
+            font=("Microsoft YaHei UI", 10),
             bg="#ffffff",
             fg=self.COLOR_MUTED
         )
@@ -199,7 +199,7 @@ class FloatingWindow:
         self.status_label = tk.Label(
             status_frame,
             text=f"话术文件：{os.path.basename(self.phrases_path)}",
-            font=("Microsoft YaHei UI", 8),
+            font=("Microsoft YaHei UI", 10),
             bg="#ffffff",
             fg=self.COLOR_MUTED,
             anchor="w"
@@ -210,7 +210,7 @@ class FloatingWindow:
         btn = tk.Button(
             self.title_bar,
             text=text,
-            font=("Microsoft YaHei UI", 9, "bold"),
+            font=("Microsoft YaHei UI", 10, "bold"),
             bg=self.COLOR_TITLE,
             fg="#f9fafb",
             activebackground=hover_bg,

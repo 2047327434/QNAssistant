@@ -46,8 +46,8 @@ class EditDialog:
             pass
         style.configure(
             "Treeview",
-            font=("Microsoft YaHei UI", 9),
-            rowheight=28,
+            font=("Microsoft YaHei UI", 10),
+            rowheight=32,
             background=self.COLOR_CARD,
             fieldbackground=self.COLOR_CARD,
             foreground=self.COLOR_TEXT,
@@ -55,14 +55,14 @@ class EditDialog:
             lightcolor=self.COLOR_BORDER,
             darkcolor=self.COLOR_BORDER
         )
-        style.configure("Treeview.Heading", font=("Microsoft YaHei UI", 9, "bold"), background="#eef0f6", foreground=self.COLOR_TEXT)
+        style.configure("Treeview.Heading", font=("Microsoft YaHei UI", 10, "bold"), background="#eef0f6", foreground=self.COLOR_TEXT)
         style.map("Treeview", background=[("selected", self.COLOR_PRIMARY)], foreground=[("selected", "white")])
 
     def _build_ui(self):
         header = tk.Frame(self.top, bg=self.COLOR_BG)
         header.pack(fill=tk.X, padx=16, pady=(14, 8))
-        tk.Label(header, text="编辑话术库", font=("Microsoft YaHei UI", 14, "bold"), bg=self.COLOR_BG, fg=self.COLOR_TEXT).pack(anchor="w")
-        tk.Label(header, text="分组和话术会保存到工具根目录 phrases.txt", font=("Microsoft YaHei UI", 8), bg=self.COLOR_BG, fg=self.COLOR_MUTED).pack(anchor="w", pady=(2, 0))
+        tk.Label(header, text="编辑话术库", font=("Microsoft YaHei UI", 15, "bold"), bg=self.COLOR_BG, fg=self.COLOR_TEXT).pack(anchor="w")
+        tk.Label(header, text="分组和话术会保存到工具根目录 phrases.txt", font=("Microsoft YaHei UI", 10), bg=self.COLOR_BG, fg=self.COLOR_MUTED).pack(anchor="w", pady=(2, 0))
 
         group_frame = self._make_section(self.top, "分组")
         group_frame.pack(fill=tk.X, padx=16, pady=(0, 10))
@@ -70,7 +70,7 @@ class EditDialog:
         self.group_listbox = tk.Listbox(
             group_frame,
             height=5,
-            font=("Microsoft YaHei UI", 9),
+            font=("Microsoft YaHei UI", 10),
             activestyle="none",
             relief=tk.FLAT,
             bd=0,
@@ -111,7 +111,7 @@ class EditDialog:
 
         bottom = tk.Frame(self.top, bg=self.COLOR_BG)
         bottom.pack(fill=tk.X, padx=16, pady=(0, 14))
-        tk.Label(bottom, text="保存后立即写入 phrases.txt", fg=self.COLOR_MUTED, bg=self.COLOR_BG, font=("Microsoft YaHei UI", 8)).pack(side=tk.LEFT)
+        tk.Label(bottom, text="保存后立即写入 phrases.txt", fg=self.COLOR_MUTED, bg=self.COLOR_BG, font=("Microsoft YaHei UI", 10)).pack(side=tk.LEFT)
         self._make_button(bottom, "保存", self._save, primary=True, width=10).pack(side=tk.RIGHT, padx=(8, 0))
         self._make_button(bottom, "取消", self.top.destroy, width=10).pack(side=tk.RIGHT)
 
@@ -119,7 +119,7 @@ class EditDialog:
 
     def _make_section(self, parent, title):
         outer = tk.Frame(parent, bg=self.COLOR_CARD, highlightthickness=1, highlightbackground=self.COLOR_BORDER)
-        tk.Label(outer, text=title, font=("Microsoft YaHei UI", 9, "bold"), bg=self.COLOR_CARD, fg=self.COLOR_TEXT, anchor="w").pack(fill=tk.X, padx=12, pady=(10, 0))
+        tk.Label(outer, text=title, font=("Microsoft YaHei UI", 10, "bold"), bg=self.COLOR_CARD, fg=self.COLOR_TEXT, anchor="w").pack(fill=tk.X, padx=12, pady=(10, 0))
         return outer
 
     def _make_button(self, parent, text, command, primary=False, danger=False, width=7):
@@ -137,7 +137,7 @@ class EditDialog:
             fg=fg,
             activebackground=active,
             activeforeground=fg,
-            font=("Microsoft YaHei UI", 9),
+            font=("Microsoft YaHei UI", 10),
             cursor="hand2",
             padx=8,
             pady=5
@@ -239,8 +239,8 @@ class EditDialog:
         dialog.geometry("340x150")
         dialog.configure(bg=self.COLOR_BG)
         dialog.grab_set()
-        tk.Label(dialog, text=label, font=("Microsoft YaHei UI", 9), bg=self.COLOR_BG, fg=self.COLOR_TEXT).pack(anchor="w", padx=14, pady=(14, 5))
-        entry = tk.Entry(dialog, font=("Microsoft YaHei UI", 10), relief=tk.FLAT, bd=0, bg="white")
+        tk.Label(dialog, text=label, font=("Microsoft YaHei UI", 10), bg=self.COLOR_BG, fg=self.COLOR_TEXT).pack(anchor="w", padx=14, pady=(14, 5))
+        entry = tk.Entry(dialog, font=("Microsoft YaHei UI", 11), relief=tk.FLAT, bd=0, bg="white")
         entry.pack(fill=tk.X, padx=14, ipady=6)
         entry.insert(0, initial)
         entry.select_range(0, tk.END)
@@ -263,13 +263,13 @@ class EditDialog:
         dialog.configure(bg=self.COLOR_BG)
         dialog.grab_set()
 
-        tk.Label(dialog, text="标题：", font=("Microsoft YaHei UI", 9), bg=self.COLOR_BG, fg=self.COLOR_TEXT).pack(anchor="w", padx=14, pady=(14, 5))
-        title_entry = tk.Entry(dialog, font=("Microsoft YaHei UI", 10), relief=tk.FLAT, bd=0, bg="white")
+        tk.Label(dialog, text="标题：", font=("Microsoft YaHei UI", 10), bg=self.COLOR_BG, fg=self.COLOR_TEXT).pack(anchor="w", padx=14, pady=(14, 5))
+        title_entry = tk.Entry(dialog, font=("Microsoft YaHei UI", 11), relief=tk.FLAT, bd=0, bg="white")
         title_entry.pack(fill=tk.X, padx=14, ipady=6)
         title_entry.insert(0, initial_title)
 
-        tk.Label(dialog, text="内容：", font=("Microsoft YaHei UI", 9), bg=self.COLOR_BG, fg=self.COLOR_TEXT).pack(anchor="w", padx=14, pady=(12, 5))
-        content_text = tk.Text(dialog, font=("Microsoft YaHei UI", 10), height=7, relief=tk.FLAT, bd=0, bg="white", wrap=tk.WORD)
+        tk.Label(dialog, text="内容：", font=("Microsoft YaHei UI", 10), bg=self.COLOR_BG, fg=self.COLOR_TEXT).pack(anchor="w", padx=14, pady=(12, 5))
+        content_text = tk.Text(dialog, font=("Microsoft YaHei UI", 11), height=7, relief=tk.FLAT, bd=0, bg="white", wrap=tk.WORD)
         content_text.pack(fill=tk.BOTH, expand=True, padx=14)
         content_text.insert("1.0", initial_content)
 
