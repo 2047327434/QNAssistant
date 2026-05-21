@@ -82,11 +82,11 @@ class WindowTracker:
             if x + panel_width > screen_w:
                 x = max(left, screen_w - panel_width)
 
-            # 顶部对齐，但避免超出屏幕
-            y = max(0, top)
-            h = max(bottom - top, 600)
-            if y + h > screen_h:
-                h = max(400, screen_h - y)
+            # 底部对齐千牛窗口，高度至少 400
+            target_bottom = min(bottom, screen_h)
+            h = min(bottom - top, screen_h)
+            h = max(h, 400)
+            y = max(0, target_bottom - h)
 
             return (x, y, panel_width, h)
         return None
