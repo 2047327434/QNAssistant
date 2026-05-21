@@ -340,6 +340,12 @@ class FloatingWindow:
         self._icon_dragged = False
 
     def _restore_from_icon(self):
+        if self._auto_hidden_by_qianniu or self.tracker.is_window_minimized():
+            reception_hwnd = self.tracker.find_reception_window()
+            if reception_hwnd:
+                self.tracker.bring_to_front(reception_hwnd)
+            self._auto_hidden_by_qianniu = False
+
         if self.icon_window and self.icon_window.winfo_exists():
             self.icon_window.withdraw()
         self.root.deiconify()
@@ -379,21 +385,19 @@ class FloatingWindow:
                     self._auto_hidden_target = "root"
                 elif self.icon_window and self.icon_window.winfo_exists() and self.icon_window.state() != "withdrawn":
                     self._auto_hidden_target = "icon"
-                if self.icon_window and self.icon_window.winfo_exists() and self.icon_window.state() != "withdrawn":
-                    self.icon_window.withdraw()
                 self._auto_hidden_by_qianniu = True
+
+                if not (self.icon_window and self.icon_window.winfo_exists() and self.icon_window.state() != "withdrawn"):
+                    self._show_icon_window()
             return True
 
         if self._auto_hidden_by_qianniu:
             self._auto_hidden_by_qianniu = False
-            if self._auto_hidden_target == "icon":
-                self._show_icon_window()
-            else:
-                if self.icon_window and self.icon_window.winfo_exists():
-                    self.icon_window.withdraw()
-                self.root.deiconify()
-                self.root.lift()
-                self._initial_position()
+            if self.icon_window and self.icon_window.winfo_exists():
+                self.icon_window.withdraw()
+            self.root.deiconify()
+            self.root.lift()
+            self._initial_position()
             self._set_status("已跟随千牛恢复 · 点击话术自动上屏", self.COLOR_SUCCESS)
             return False
 
