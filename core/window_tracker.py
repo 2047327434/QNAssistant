@@ -70,27 +70,21 @@ class WindowTracker:
         return None
 
     def get_floating_position(self, panel_width=280):
-        """计算悬浮窗应该吸附的位置（千牛接待台右侧）"""
+        """计算悬浮窗应该吸附的位置（强制贴在千牛接待台右侧）。"""
         rect = self.get_reception_rect()
         if rect:
             left, top, right, bottom = rect
-            screen_w = ctypes.windll.user32.GetSystemMetrics(0)
-            screen_h = ctypes.windll.user32.GetSystemMetrics(1)
 
-            # 优先吸附在接待台右侧；如果超出屏幕，则吸附在接待台内部右边缘
+            # 吸附模式下始终贴在千牛右侧，允许超出屏幕范围，不做横向裁剪
             x = right
-            if x + panel_width > screen_w:
-                x = max(left, screen_w - panel_width)
 
-            # 底部对齐千牛窗口；若工具最小高度 > 千牛高度，退化为顶部对齐
-            target_bottom = min(bottom, screen_h)
+            # 纵向仍按千牛窗口高度对齐；允许超出屏幕，不做屏幕裁剪
             h = max(bottom - top, 320)
             if h > bottom - top:
-                # 工具比千牛高，退化为顶部对齐避免底部溢出
-                y = max(0, top)
-                h = min(h, screen_h - y)
+                # 工具比千牛高时退化为顶部对齐，但不再按屏幕高度裁剪
+                y = top
             else:
-                y = max(0, target_bottom - h)
+                y = bottom - h
 
             return (x, y, panel_width, h)
         return None
