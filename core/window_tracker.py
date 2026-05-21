@@ -100,13 +100,76 @@ class WindowTracker:
         rect = self.get_chat_rect()
         if rect:
             left, top, right, bottom = rect
-            # 输入框在窗口底部约 15% 区域
             input_top = bottom - int((bottom - top) * 0.15)
-            input_bottom = bottom - int((bottom - top) * 0.02)  # 留点边距
+            input_bottom = bottom - int((bottom - top) * 0.02)
             center_x = (left + right) // 2
             center_y = (input_top + input_bottom) // 2
             return (center_x, center_y)
         return None
+
+    def find_chat_input_hwnd(self):
+        """枚举聊天窗口子控件，用位置+尺寸评分找出输入框 HWND。
+
+        Qt 5.15 子控件类名通常也是 Qt5152QWindowIcon，但位置固定在窗口底部、
+        宽度几乎撑满、高度 20-80px 且无子窗口（叶子节点）。
+
+        Returns:
+            (hwnd, rect) 或 (None, None)
+        """
+        if not self._chat_hwnd or not win32gui.IsWindow(self._chat_hwnd):
+            self.find_chat_window()
+        if not self._chat_hwnd:
+            return None, None
+
+        parent = self._chat_hwnd
+        parent_rect = win32gui.GetWindowRect(parent)
+        pw = parent_rect[2] - parent_rect[0]
+        ph = parent_rect[3] - parent_rect[1]
+
+        candidates = []
+
+        def enum_child(hwnd, _):
+            rect = win32gui.GetWindowRect(hwnd)
+            x, y, r, b = rect
+            w = r - x
+            h = b - y
+            # 相对于父窗口的 top
+            rel_top = y - parent_rect[1]
+            rel_bottom = b - parent_rect[1]
+
+            # 过滤：必须在窗口下半区（50%以下）
+            if rel_top < ph * 0.45:
+                return True
+            # 高度合理：12-150px
+            if h < 12 or h > 150:
+                return True
+            # 宽度不能太窄（至少父窗口宽度的 30%）
+            if w < pw * 0.3:
+                return True
+
+            # 计算得分：越靠底部 + 越宽 + 无子窗口 → 越高
+            pos_score = rel_top / ph                           # 0~1，越接近底部越高
+            width_score = min(w / pw, 1.0)                     # 0~1，越宽越高
+            has_children = 0
+            try:
+                has_children = 1 if win32gui.FindWindowEx(hwnd, 0, None, None) else 0
+            except Exception:
+                pass
+            leaf_bonus = 1.0 if not has_children else 0.3      # 叶子节点加分
+            score = pos_score * 0.5 + width_score * 0.3 + leaf_bonus * 0.2
+
+            candidates.append((hwnd, rect, score))
+            return True
+
+        win32gui.EnumChildWindows(parent, enum_child, None)
+
+        if candidates:
+            candidates.sort(key=lambda x: x[2], reverse=True)
+            best = candidates[0]
+            return best[0], best[1]
+
+        # 没找到子控件，退回底部15%估算
+        return None, None
 
     def get_chat_display_area(self):
         """获取聊天记录显示区域的大致坐标（中间偏右60%区域中心）"""

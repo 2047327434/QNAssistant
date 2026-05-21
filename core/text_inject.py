@@ -43,36 +43,64 @@ class TextInjector:
 
         self.tracker.bring_to_front(chat_hwnd)
         time.sleep(0.08)
-        input_area = self.tracker.get_chat_input_area()
-        if input_area:
-            self._click_position(input_area[0], input_area[1])
-            time.sleep(0.08)
+        self._click_input_box()
         ctrl_v(delay=0.05)
         return True
 
     def inject_to_last_or_chat(self, text, last_chat_hwnd=None):
-        """使用缓存的千牛聊天窗口上屏，解决点击工具后前台窗口变化的问题。"""
+        """使用缓存的千牛聊天窗口上屏，优先精准定位输入框。
+
+        链路：
+        1. 当前前台仍是千牛 → 直接 Ctrl+V
+        2. 有缓存聊天窗口 → 置前 + 精准点击输入框 + Ctrl+V
+        3. 最后退回：查找窗口 + 精准点击输入框 + Ctrl+V
+        """
         if not text:
             return False
 
         self.clipboard.write(text)
         time.sleep(0.03)
 
-        # 1. 如果当前前台仍是千牛，直接粘贴，最大限度保留原输入框焦点
+        # 1. 如果当前前台仍是千牛，直接粘贴
         foreground = win32gui.GetForegroundWindow()
         if self.is_qianniu_chat_window(foreground):
             ctrl_v(delay=0.05)
             return True
 
-        # 2. 如果有最近记录的千牛聊天窗口，优先恢复该窗口并粘贴
+        # 2. 如果有缓存的千牛聊天窗口，恢复并精准点击输入框后粘贴
         if last_chat_hwnd and win32gui.IsWindow(last_chat_hwnd):
             self.tracker.bring_to_front(last_chat_hwnd)
             time.sleep(0.08)
+            self._click_input_box()
             ctrl_v(delay=0.05)
             return True
 
-        # 3. 最后退回查找窗口 + 点击输入区域方案
-        return self.inject_to_active_or_chat(text)
+        # 3. 最后退回查找窗口 + 精准点击输入框方案
+        chat_hwnd = self.tracker.find_chat_window()
+        if not chat_hwnd:
+            return False
+        self.tracker.bring_to_front(chat_hwnd)
+        time.sleep(0.08)
+        self._click_input_box()
+        ctrl_v(delay=0.05)
+        return True
+
+    def _click_input_box(self):
+        """精准定位并点击聊天窗口内的输入框。"""
+        # 优先：枚举子窗口找输入框
+        input_hwnd, input_rect = self.tracker.find_chat_input_hwnd()
+        if input_hwnd and input_rect:
+            cx = (input_rect[0] + input_rect[2]) // 2
+            cy = (input_rect[1] + input_rect[3]) // 2
+            self._click_position(cx, cy)
+            time.sleep(0.05)
+            return
+
+        # 降级：底部15%估算
+        input_area = self.tracker.get_chat_input_area()
+        if input_area:
+            self._click_position(input_area[0], input_area[1])
+            time.sleep(0.05)
 
     def is_qianniu_chat_window(self, hwnd):
         """判断窗口是否为千牛聊天窗口。"""
@@ -126,12 +154,9 @@ class TextInjector:
         self.tracker.bring_to_front(chat_hwnd)
         time.sleep(0.1)
 
-        # 4. 点击输入框区域
+        # 4. 精准点击输入框
         if click_input:
-            input_area = self.tracker.get_chat_input_area()
-            if input_area:
-                self._click_position(input_area[0], input_area[1])
-                time.sleep(0.1)
+            self._click_input_box()
 
         # 5. Ctrl+V 粘贴
         ctrl_v(delay=0.08)
@@ -163,10 +188,7 @@ class TextInjector:
 
         # 点击输入框
         if click_input:
-            input_area = self.tracker.get_chat_input_area()
-            if input_area:
-                self._click_position(input_area[0], input_area[1])
-                time.sleep(0.1)
+            self._click_input_box()
 
         # 清空输入框：Ctrl+A → Backspace/Delete
         from .keyboard_ops import ctrl_a
