@@ -44,6 +44,8 @@ class FloatingWindow:
         self._icon_drag_start_x = 0
         self._icon_drag_start_y = 0
         self._icon_dragged = False
+        self._auto_hidden_by_qianniu = False
+        self._auto_hidden_target = None
         self.icon_window = None
         self.icon_canvas = None
 
@@ -360,8 +362,51 @@ class FloatingWindow:
         else:
             self._set_status("未找到千牛，可手动拖动窗口 · 双击标题栏切换吸附", self.COLOR_WARN)
 
+    def _handle_qianniu_minimize_state(self):
+        """千牛被手动最小化时自动隐藏工具；恢复后自动显示并重新吸附。"""
+        if not self._auto_track:
+            return False
+
+        reception_hwnd = self.tracker.find_reception_window()
+        if not reception_hwnd:
+            return False
+
+        if self.tracker.is_window_minimized():
+            if not self._auto_hidden_by_qianniu:
+                self._auto_hidden_target = None
+                if self.root.state() != "withdrawn":
+                    self.root.withdraw()
+                    self._auto_hidden_target = "root"
+                elif self.icon_window and self.icon_window.winfo_exists() and self.icon_window.state() != "withdrawn":
+                    self._auto_hidden_target = "icon"
+                if self.icon_window and self.icon_window.winfo_exists() and self.icon_window.state() != "withdrawn":
+                    self.icon_window.withdraw()
+                self._auto_hidden_by_qianniu = True
+            return True
+
+        if self._auto_hidden_by_qianniu:
+            self._auto_hidden_by_qianniu = False
+            if self._auto_hidden_target == "icon":
+                self._show_icon_window()
+            else:
+                if self.icon_window and self.icon_window.winfo_exists():
+                    self.icon_window.withdraw()
+                self.root.deiconify()
+                self.root.lift()
+                self._initial_position()
+            self._set_status("已跟随千牛恢复 · 点击话术自动上屏", self.COLOR_SUCCESS)
+            return False
+
+        return False
+
     def _track_loop(self):
         self._remember_active_chat_window()
+        self.tracker.refresh()
+
+        if self._handle_qianniu_minimize_state():
+            self.root.after(self.TRACK_INTERVAL, self._track_loop)
+            return
+
         if self._auto_track and self.root.state() != "withdrawn":
             pos = self.tracker.get_floating_position(self.PANEL_WIDTH)
             if pos and not self.tracker.is_window_minimized():
@@ -370,7 +415,6 @@ class FloatingWindow:
                 self._set_status("已吸附千牛 · 点击话术自动上屏", self.COLOR_SUCCESS)
             elif not pos:
                 self._set_status("未找到千牛，可手动拖动窗口", self.COLOR_WARN)
-            self.tracker.refresh()
         self.root.after(self.TRACK_INTERVAL, self._track_loop)
 
     def _on_phrase_copied(self, content):
