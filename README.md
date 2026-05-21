@@ -1,4 +1,4 @@
-﻿# 千牛话术助手
+# 千牛话术助手
 
 ## 隐私说明
 
@@ -77,4 +77,3 @@ pyinstaller build.spec
 ```txt
 dist/QianniuAssistant.exe
 ```
-
