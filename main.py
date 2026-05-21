@@ -304,11 +304,27 @@ class FloatingWindow:
         if not self.icon_canvas:
             return
         self.icon_canvas.delete("all")
+
         fill = self.COLOR_PRIMARY if normal else self.COLOR_PRIMARY_DARK
-        self.icon_canvas.create_oval(4, 6, self.ICON_SIZE - 2, self.ICON_SIZE, fill="#a5b0f7", outline="")
-        self.icon_canvas.create_oval(3, 3, self.ICON_SIZE - 5, self.ICON_SIZE - 5, fill=fill, outline="#ffffff", width=2)
-        self.icon_canvas.create_text(self.ICON_SIZE // 2 - 1, 21, text="千", fill="white", font=("Microsoft YaHei UI", 15, "bold"))
-        self.icon_canvas.create_text(self.ICON_SIZE // 2 - 1, 40, text="话术", fill="white", font=("Microsoft YaHei UI", 8, "bold"))
+        ring = "#dbe3ff" if normal else "#c7d3ff"
+        bubble = "#ffffff"
+        accent = "#edf2ff" if normal else "#dfe7ff"
+
+        self.icon_canvas.create_oval(6, 6, self.ICON_SIZE - 6, self.ICON_SIZE - 6, fill=ring, outline="")
+        self.icon_canvas.create_oval(10, 10, self.ICON_SIZE - 10, self.ICON_SIZE - 10, fill=fill, outline="", width=0)
+
+        self.icon_canvas.create_oval(18, 16, self.ICON_SIZE - 18, 38, fill=bubble, outline="")
+        self.icon_canvas.create_polygon(
+            self.ICON_SIZE // 2 - 7, 36,
+            self.ICON_SIZE // 2 - 1, 43,
+            self.ICON_SIZE // 2 + 7, 36,
+            fill=bubble,
+            outline=""
+        )
+
+        self.icon_canvas.create_line(24, 23, self.ICON_SIZE - 24, 23, fill=accent, width=3, capstyle=tk.ROUND)
+        self.icon_canvas.create_line(24, 29, self.ICON_SIZE - 28, 29, fill=accent, width=3, capstyle=tk.ROUND)
+        self.icon_canvas.create_oval(self.ICON_SIZE - 22, 14, self.ICON_SIZE - 14, 22, fill="#22c55e", outline="")
 
     def _get_icon_position(self):
         screen_w = self.root.winfo_screenwidth()
