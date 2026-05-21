@@ -6,12 +6,12 @@ from tkinter import ttk, messagebox
 class EditDialog:
     """编辑分组名称和话术内容。"""
 
-    COLOR_PRIMARY = "#1677ff"
-    COLOR_BG = "#f5f8fc"
+    COLOR_PRIMARY = "#5b6af0"
+    COLOR_BG = "#eef0f6"
     COLOR_CARD = "#ffffff"
-    COLOR_TEXT = "#111827"
-    COLOR_MUTED = "#6b7280"
-    COLOR_BORDER = "#d8e2ef"
+    COLOR_TEXT = "#1e1f2a"
+    COLOR_MUTED = "#8c8ea3"
+    COLOR_BORDER = "#e4e5ee"
 
     def __init__(self, parent, phrases_data):
         self.result = None
@@ -55,7 +55,7 @@ class EditDialog:
             lightcolor=self.COLOR_BORDER,
             darkcolor=self.COLOR_BORDER
         )
-        style.configure("Treeview.Heading", font=("Microsoft YaHei UI", 9, "bold"), background="#edf3fb", foreground=self.COLOR_TEXT)
+        style.configure("Treeview.Heading", font=("Microsoft YaHei UI", 9, "bold"), background="#eef0f6", foreground=self.COLOR_TEXT)
         style.map("Treeview", background=[("selected", self.COLOR_PRIMARY)], foreground=[("selected", "white")])
 
     def _build_ui(self):
@@ -123,9 +123,9 @@ class EditDialog:
         return outer
 
     def _make_button(self, parent, text, command, primary=False, danger=False, width=7):
-        bg = self.COLOR_PRIMARY if primary else ("#fee2e2" if danger else "#eef4fb")
+        bg = self.COLOR_PRIMARY if primary else ("#fee2e2" if danger else "#edeff7")
         fg = "white" if primary else ("#b91c1c" if danger else self.COLOR_TEXT)
-        active = "#0f5fd7" if primary else ("#fecaca" if danger else "#dde9f7")
+        active = "#4a5ad9" if primary else ("#fecaca" if danger else "#dde2f4")
         return tk.Button(
             parent,
             text=text,

@@ -20,15 +20,15 @@ class FloatingWindow:
     ICON_SIZE = 60
     TRANSPARENT_COLOR = "#ff00ff"
 
-    COLOR_PRIMARY = "#1677ff"
-    COLOR_PRIMARY_DARK = "#0f5fd7"
-    COLOR_TITLE = "#111827"
-    COLOR_BG = "#e8eef7"
+    COLOR_PRIMARY = "#5b6af0"
+    COLOR_PRIMARY_DARK = "#4a5ad9"
+    COLOR_TITLE = "#181a29"
+    COLOR_BG = "#eef0f6"
     COLOR_CARD = "#ffffff"
-    COLOR_MUTED = "#6b7280"
-    COLOR_BORDER = "#d8e2ef"
-    COLOR_SUCCESS = "#16a34a"
-    COLOR_WARN = "#d97706"
+    COLOR_MUTED = "#8c8ea3"
+    COLOR_BORDER = "#e4e5ee"
+    COLOR_SUCCESS = "#22c55e"
+    COLOR_WARN = "#f59e0b"
 
     def __init__(self):
         self.app_root = get_app_root()
@@ -144,7 +144,7 @@ class FloatingWindow:
         self.track_btn = self._make_title_button("自动", self._toggle_auto_track, hover_bg="#374151", width=5)
         self.track_btn.pack(side=tk.RIGHT, padx=(0, 4), pady=8)
 
-        body = tk.Frame(self.shell, bg="#f5f8fc")
+        body = tk.Frame(self.shell, bg=self.COLOR_BG)
         body.pack(fill=tk.BOTH, expand=True)
 
         self.phrases_panel = PhrasesPanel(
@@ -303,7 +303,7 @@ class FloatingWindow:
             return
         self.icon_canvas.delete("all")
         fill = self.COLOR_PRIMARY if normal else self.COLOR_PRIMARY_DARK
-        self.icon_canvas.create_oval(4, 6, self.ICON_SIZE - 2, self.ICON_SIZE, fill="#8fbdfc", outline="")
+        self.icon_canvas.create_oval(4, 6, self.ICON_SIZE - 2, self.ICON_SIZE, fill="#a5b0f7", outline="")
         self.icon_canvas.create_oval(3, 3, self.ICON_SIZE - 5, self.ICON_SIZE - 5, fill=fill, outline="#ffffff", width=2)
         self.icon_canvas.create_text(self.ICON_SIZE // 2 - 1, 21, text="千", fill="white", font=("Microsoft YaHei UI", 15, "bold"))
         self.icon_canvas.create_text(self.ICON_SIZE // 2 - 1, 40, text="话术", fill="white", font=("Microsoft YaHei UI", 8, "bold"))
