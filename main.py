@@ -16,7 +16,7 @@ class FloatingWindow:
 
     PANEL_WIDTH = 300
     DEFAULT_HEIGHT = 640
-    TRACK_INTERVAL = 250
+    TRACK_INTERVAL = 80
     ICON_SIZE = 60
     TRANSPARENT_COLOR = "#ff00ff"
 
